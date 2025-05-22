@@ -1,0 +1,6 @@
+README.md
+setup.py
+MC_Quiz_Generator.egg-info/PKG-INFO
+MC_Quiz_Generator.egg-info/SOURCES.txt
+MC_Quiz_Generator.egg-info/dependency_links.txt
+MC_Quiz_Generator.egg-info/top_level.txt

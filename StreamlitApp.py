@@ -12,10 +12,12 @@ with open(r'C:\Users\A674848\OneDrive - ATOS\Desktop\Atos Projects\GenAI\MC_Quiz
     RESPONSE_JSON = json.load(file)
     
 # Initialize session state for results
-if "response" not in st.session_state:
-    st.session_state.response = None
+if "ready" not in st.session_state:
+    st.session_state.ready = False
 if "df" not in st.session_state:
     st.session_state.df = None
+if "response" not in st.session_state:
+    st.session_state.response = None
     
 # Create a title for the app
 st.title("MCQs Creator Application with Langchain 🦜🔗")
@@ -90,7 +92,7 @@ with st.form("user_inputs"):
                     st.write(response)
                     
 # Show download button only when ready state
-if st.session.state.ready and st.session.state.df is not None and st.session_state.response is not None:
+if st.session_state.get("ready") and st.session_state.get("df") is not None and st.session_state.get("response") is not None:
     st.success("MCQs generated successfully! You can now download them.")
     
     csv_data = st.session_state.df.to_csv(index=False).encode('utf-8')

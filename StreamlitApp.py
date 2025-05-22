@@ -1,0 +1,111 @@
+import streamlit as st
+from langchain_community.callbacks.manager import get_openai_callback
+from src.mcqgenerator.MCQGenerator import generate_evaluate_chain
+from src.mcqgenerator.logger import logging
+from src.mcqgenerator.utils import read_file, get_table_data
+import pandas as pd
+import traceback
+import json
+
+# loading json file
+with open(r'C:\Users\A674848\OneDrive - ATOS\Desktop\Atos Projects\GenAI\MC_Quiz_GenAI\template\response.json', 'r') as file:
+    RESPONSE_JSON = json.load(file)
+    
+# Initialize session state for results
+if "response" not in st.session_state:
+    st.session_state.response = None
+if "df" not in st.session_state:
+    st.session_state.df = None
+    
+# Create a title for the app
+st.title("MCQs Creator Application with Langchain 🦜🔗")
+
+# Create form using st.form
+with st.form("user_inputs"):
+    # File upload
+    upload_file = st.file_uploader("Upload a PDF or Text file")
+    
+    # Input fields
+    mcq_count = st.number_input("No. of MCQs", min_value=3, max_value=50)
+    
+    # Subject
+    subject = st.text_input("Insert Subject", max_chars=20)
+    
+    # Quiz Tone
+    tone = st.text_input("Complexity Level of Question", max_chars=20, placeholder="Simple")
+    
+    # Add Button
+    button = st.form_submit_button("Create MCQs")
+    
+    # Check if the button is clicked and all fields have input
+    if button and upload_file is not None and mcq_count and subject and tone:
+        with st.spinner("Loading..."):
+            try:
+                text = read_file(upload_file)
+                
+                # Count tokens and the cost of API call
+                with get_openai_callback() as cb:
+                    response = generate_evaluate_chain(
+                        {
+                            "text": text,
+                            "number": mcq_count,
+                            "subject": subject,
+                            "tone": tone,
+                            "response_json": json.dumps(RESPONSE_JSON)
+                        }
+                    )
+                # st.write(response)
+            except Exception as e:
+                traceback.print_exception(type(e), e, e.__traceback__)
+                st.error("An error occured while generating the MCQs.")
+                st.session_state.ready = False
+            
+            else:
+                print(f"Total Tokens:{cb.total_tokens}")
+                print(f"Prompt Tokens:{cb.prompt_tokens}")
+                print(f"Completion Tokens:{cb.completion_tokens}")
+                print(f"Total Cost:{cb.total_cost}")
+                
+                if isinstance(response, dict):
+                    # Extract the quiz data from the response
+                    quiz = response.get("quiz", None)
+                    if quiz is not None:
+                        table_data = get_table_data(quiz)
+                        if table_data is not None:
+                            df = pd.DataFrame(table_data)
+                            df.index = df.index + 1
+                            
+                            st.session_state.df = df
+                            st.session_state.response = response
+                            st.session_state.ready = True
+                            
+                            st.table(df)
+                            # Display the review in a text box as well
+                            st.text_area(label="Review", value=response.get("review", ""), height=150)
+                        else:
+                            st.error("Failed to parse quiz data")
+                            st.session_state.ready = False
+                            
+                else:
+                    st.write(response)
+                    
+# Show download button only when ready state
+if st.session.state.ready and st.session.state.df is not None and st.session_state.response is not None:
+    st.success("MCQs generated successfully! You can now download them.")
+    
+    csv_data = st.session_state.df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label = "Download MCQs as CSV",
+        data = csv_data,
+        file_name = "Generated_mcqs.csv",
+        mime = "text/csv"
+    )
+    
+    json_data = json.dumps(st.session_state.response, index=2).encode('utf-8')
+    st.download_button(
+        label = "Download Full Response as JSON",
+        data = json_data,
+        file_name = "Full_Reponse.json",
+        mime = "application/json"
+    )
+    

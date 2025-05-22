@@ -4,3 +4,8 @@ MC_Quiz_Generator.egg-info/PKG-INFO
 MC_Quiz_Generator.egg-info/SOURCES.txt
 MC_Quiz_Generator.egg-info/dependency_links.txt
 MC_Quiz_Generator.egg-info/top_level.txt
+src/__init__.py
+src/mcqgenerator/MCQGenerator.py
+src/mcqgenerator/__init__.py
+src/mcqgenerator/logger.py
+src/mcqgenerator/utils.py
